@@ -80,7 +80,10 @@ public class AutoTapService extends AccessibilityService {
         // (실기기 로그 2026-10-04) 여기서 지우면 방금 탭한 arm 을 잃는다.
         // 재부팅 전 기록과 오래된 기록은 armed() 의 시각 검사가 거른다.
         // 같은 인스턴스에 두 번 불려도 observer 는 하나만 둔다.
-        if (observer == null) startObserver(wasRunning);
+        if (observer == null) {
+            reconcileConnection(wasRunning);
+            startObserver();
+        }
         AutoBlockerWidget.refresh(this); // 「설정 필요」를 지우고 현재 캐시로 다시 그린다.
     }
 
@@ -202,23 +205,27 @@ public class AutoTapService extends AccessibilityService {
     /** elapsedRealtime. 0 은 없음. */
     private long lastNotifyAt, lastScreenReadAt;
 
-    private void startObserver(boolean wasRunning) {
-        long offAt = getSharedPreferences(AutoBlockerWidget.STATE_PREFS, MODE_PRIVATE).getLong(SVC_OFF_AT, 0);
-        StateLog.add(this, "service_connected", (wasRunning ? "instance was alive, " : "")
-                + (offAt == 0 ? "no disconnect record" : "last disconnect " + time(offAt)));
-        probe(-1);
+    private void startObserver() {
         ContentObserver ob = new ContentObserver(handler) {
             @Override public void onChange(boolean selfChange) { onMainSwitchChanged(); }
         };
         try {
             getContentResolver().registerContentObserver(Settings.Secure.getUriFor(MAIN_SWITCH_KEY), false, ob);
         } catch (RuntimeException e) {
-            // SecurityException 등. 알림 없이 기존 동작(화면에서 읽은 캐시)만 쓴다.
+            // SecurityException 등. 공백 처리는 이미 끝났고 이후에는 화면에서만 상태를 읽는다.
             StateLog.add(this, "observer_fail", e.getClass().getSimpleName() + ": " + e.getMessage());
             return;
         }
         observer = ob;
         StateLog.add(this, "observer_ok", MAIN_SWITCH_KEY);
+    }
+
+    /** 알림 등록 성공 여부와 무관하게 연결 전 공백을 처리한다. */
+    private void reconcileConnection(boolean wasRunning) {
+        long offAt = getSharedPreferences(AutoBlockerWidget.STATE_PREFS, MODE_PRIVATE).getLong(SVC_OFF_AT, 0);
+        StateLog.add(this, "service_connected", (wasRunning ? "instance was alive, " : "")
+                + (offAt == 0 ? "no disconnect record" : "last disconnect " + time(offAt)));
+        probe(-1);
         // 연결 전에는 observer 가 없었으므로 그동안의 변화는 알 수 없다. 해제 기록(onUnbind, onDestroy)은
         // 프로세스가 죽으면 남지 않아 공백 길이를 믿을 수 없으므로 (재)연결마다 캐시를 미확인으로 돌린다.
         // 처음 설치 직후, 재부팅, 앱 업데이트 뒤에도 같다. 다음에 설정 화면을 보면 다시 채워진다. 위젯은 onServiceConnected 가 다시 그린다.
@@ -288,7 +295,7 @@ public class AutoTapService extends AccessibilityService {
     // ---- 상관 관찰(시험 중, 판단에 쓰지 않음) ----
     // adb_wifi_enabled 는 켜짐 때 0 으로 강제된다는 관측이 있으나 특이도가 낮다(0 은 켜짐의 근거가 아니다).
     // 공개 SDK 34 에 ADB_WIFI_ENABLED 상수가 없어 키 문자열을 쓴다. adb_enabled 는 공개 상수 Settings.Global.ADB_ENABLED 다.
-    // 읽기만 하고 쓰지 않는다. adb·adbwifi 는 공백 처리(startObserver)에서 꺼짐 확정에도 쓴다.
+    // 읽기만 하고 쓰지 않는다. adb·adbwifi 는 공백 처리(reconcileConnection)에서 꺼짐 확정에도 쓴다.
     // rampart_suw_main_on 은 실기기(One UI 9)에서 켜짐·꺼짐과 무관하게 늘 1 이어서 읽지 않는다.
     static final String ADB_WIFI_KEY = "adb_wifi_enabled";
     /** 화면 이벤트 뒤에 마지막으로 남긴 probe 본문. 같은 값이면 다시 남기지 않는다. */

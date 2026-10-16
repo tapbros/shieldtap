@@ -126,6 +126,10 @@ MacroDroid 무료판은 화면 내용을 2초마다 읽습니다. `TURN_ON` 과 
 
 ## 개발
 
+이번 안정성 업데이트는 사전 릴리스입니다. 변경 사항은 실제 휴대전화에서 재검증하지 않았으며 정식 전환 전에 기기 검증이 필요합니다.
+
+JDK 17 에서 `bash tools/run_tests.sh` 를 실행하면 외부 의존성 없이 JVM 회귀 테스트를 돌립니다. 작은 Android 경계 대역과 실제 `AutoTapService`, `HexColor` 를 Java 8 대상으로 컴파일합니다. 관찰자 등록 예외가 난 재연결, 이전 캐시, 디버깅 활성 시 꺼짐 추론, 화면 우선 처리와 알림 순서를 검사합니다. Android 의 실제 이벤트 전달, 삼성 기기 동작, 서명된 APK 의 휴대전화 동작 검증은 아닙니다.
+
 Gradle 없이 빌드합니다. Android build-tools(`aapt2`, `d8`, `zipalign`, `apksigner`), `android-34` 플랫폼, JDK 17 이 필요합니다. SDK 가 기본 경로에 없으면 `ANDROID_SDK_ROOT` 를 지정합니다.
 
 ```bash

@@ -120,6 +120,10 @@ Start with the [user guide](docs/guide.md): [widget states](docs/guide.md#widget
 
 ## development
 
+This reliability update is a prerelease. Its changes have not been rechecked on a real phone; stable promotion requires device validation.
+
+Run `bash tools/run_tests.sh` with JDK 17 for dependency-free JVM regression tests. They compile the production `AutoTapService` and `HexColor` as Java 8 against small Android boundary fixtures. The tests cover reconnection even when observer registration throws, prior cached states, debug-enabled Off inference, screen authority and notification ordering. They do not validate Android delivery, Samsung behavior or a signed APK on a phone.
+
 ShieldTap builds without Gradle. It needs Android build-tools (`aapt2`, `d8`, `zipalign`, `apksigner`), the `android-34` platform and JDK 17. Set `ANDROID_SDK_ROOT` if the SDK is not in the default path.
 
 ```bash
